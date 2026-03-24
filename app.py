@@ -6,6 +6,22 @@ import os
 # Page Config
 st.set_page_config(page_title="Paid Media Dashboard", layout="wide")
 
+# --- DATA LOADING (AUTOMATIC) ---
+# This looks for the file you uploaded to GitHub
+if os.path.exists("master_data.csv"):
+    df = pd.read_csv("master_data.csv")
+    df = standardize_data(df)
+else:
+    # This stays as a backup in case you want to test new data
+    uploaded_file = st.sidebar.file_uploader("Upload New Data", type="csv")
+    if uploaded_file is not None:
+        df = pd.read_csv(uploaded_file)
+        df = standardize_data(df)
+    else:
+        st.warning("⚠️ master_data.csv not found in GitHub. Please upload a file.")
+        st.stop()
+
+        
 # Custom Styling
 st.markdown("""
     <style>
