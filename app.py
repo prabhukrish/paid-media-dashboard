@@ -1,16 +1,17 @@
-import streamlit as st
+\import streamlit as st
 import pandas as pd
 import plotly.express as px
 import os
 
-# 1. PAGE CONFIG
+# --- 1. PAGE CONFIG ---
 st.set_page_config(page_title="Paid Media Dashboard", layout="wide")
 
-# 2. DEFINE THE FUNCTION FIRST (Crucial to avoid the error)
+# --- 2. DATA STANDARDIZATION FUNCTION ---
 def standardize_data(df):
-    # Clean column names
+    # Clean column names (remove hidden spaces)
     df.columns = df.columns.str.strip()
     
+    # Mapping various platform names to a single standard
     rename_map = {
         'Cost': 'Spend', 
         'Amount Spent (INR)': 'Spend',
@@ -27,19 +28,28 @@ def standardize_data(df):
     for col in numeric_cols:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+    
+    # Ensure Channel and Campaign are strings
+    if 'Channel' in df.columns:
+        df['Channel'] = df['Channel'].astype(str)
+    if 'Campaign' in df.columns:
+        df['Campaign'] = df['Campaign'].astype(str)
+        
     return df
 
-# 3. CUSTOM STYLING
+# --- 3. CUSTOM STYLING ---
 st.markdown("""
     <style>
     .main { background-color: #f8f9fa; }
     div[data-testid="stMetricValue"] { font-size: 32px; color: #007bff; font-weight: bold; }
+    /* Style the dataframe to look more professional */
+    [data-testid="stTable"] { background-color: white; border-radius: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
 st.title("🎯 Performance Marketing Dashboard")
 
-# 4. DATA LOADING LOGIC
+# --- 4. DATA LOADING LOGIC ---
 data_file = "master_data.csv"
 
 if os.path.exists(data_file):
@@ -51,55 +61,21 @@ else:
         df_raw = pd.read_csv(uploaded_file)
         df = standardize_data(df_raw)
     else:
-        st.info("👋 Please upload 'master_data.csv' to your GitHub repo to see the dashboard.")
+        st.info("👋 Please upload 'master_data.csv' to your GitHub repo or use the sidebar to see the dashboard.")
         st.stop()
 
-# 5. SIDEBAR FILTERS
+# --- 5. SIDEBAR FILTERS ---
 st.sidebar.header("Filter Options")
+
+# A. Search Bar
 search_query = st.sidebar.text_input("Search Campaign Name", "")
-unique_channels = df['Channel'].unique() if 'Channel' in df.columns else []
+
+# B. Channel Filter
+unique_channels = df['Channel'].unique().tolist() if 'Channel' in df.columns else []
 selected_channels = st.sidebar.multiselect("Select Channels", options=unique_channels, default=unique_channels)
 
-# Apply Filters
-mask = df['Campaign'].str.contains(search_query, case=False)
-if 'Channel' in df.columns:
-    mask = mask & (df['Channel'].isin(selected_channels))
+# C. Campaign Picker (The Select/Deselect Feature)
+# First filter the list by selected channels
+available_campaigns = df[df['Channel'].isin(selected_channels)]['Campaign'].unique().tolist()
 
-filtered_df = df[mask]
-
-# 6. TOP ROW: KPI METRICS (₹ INR)
-total_spend = filtered_df['Spend'].sum()
-total_clicks = int(filtered_df['Clicks'].sum())
-total_conv = filtered_df['Conversions'].sum()
-avg_cpa = total_spend / total_conv if total_conv > 0 else 0
-
-m1, m2, m3, m4 = st.columns(4)
-m1.metric("Total Spend", f"₹{total_spend:,.0f}")
-m2.metric("Total Clicks", f"{total_clicks:,}")
-m3.metric("Conversions", f"{total_conv:,.0f}")
-m4.metric("Avg. CPA", f"₹{avg_cpa:,.2f}")
-
-st.markdown("---")
-
-# 7. DETAILED CAMPAIGN TABLE
-st.subheader("📊 Detailed Campaign Performance")
-
-# Grouping for Detail
-group_cols = ['Channel', 'Campaign'] if 'Channel' in df.columns else ['Campaign']
-detail_table = filtered_df.groupby(group_cols).agg({
-    'Spend': 'sum',
-    'Impressions': 'sum',
-    'Clicks': 'sum',
-    'Conversions': 'sum'
-}).reset_index()
-
-# Add Metrics
-detail_table['CTR %'] = (detail_table['Clicks'] / detail_table['Impressions'] * 100).fillna(0).round(2)
-detail_table['CPA'] = (detail_table['Spend'] / detail_table['Conversions']).round(2)
-
-# Format for Display
-display_df = detail_table.copy()
-display_df['Spend'] = display_df['Spend'].apply(lambda x: f"₹{x:,.0f}")
-display_df['CPA'] = display_df['CPA'].apply(lambda x: f"₹{x:,.2f}")
-
-st.dataframe(display_df, use_container_width=True, hide_index=True)
+selected_campaigns = st.sidebar.multiselect(
