@@ -5,6 +5,18 @@ import plotly.express as px
 # Page Config
 st.set_page_config(page_title="Paid Media Dashboard", layout="wide")
 
+# Check if a file is uploaded, otherwise look for the master file in the repo
+uploaded_file = st.sidebar.file_uploader("Upload New Data", type="csv")
+
+if uploaded_file is not None:
+    df = pd.read_csv(uploaded_file)
+elif "master_data.csv" in [f for f in os.listdir()]: # Needs 'import os' at the top
+    df = pd.read_csv("master_data.csv")
+else:
+    st.warning("No data found. Please upload a CSV or add 'master_data.csv' to your GitHub.")
+    st.stop()
+
+    
 st.title("🎯 Paid Campaign Performance")
 st.markdown("---")
 
@@ -14,6 +26,19 @@ uploaded_file = st.sidebar.file_uploader("Upload your Campaign CSV", type="csv")
 
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
+    df = standardize_data(df)
+    def standardize_data(df):
+    # Mapping Google/Meta names to our Dashboard names
+    rename_map = {
+        'Cost': 'Spend', 
+        'Amount Spent (USD)': 'Spend',
+        'Ad Campaign Name': 'Campaign',
+        'Campaign Name': 'Campaign',
+        'Results': 'Conversions'
+    }
+    return df.rename(columns=rename_map)
+
+
     
     # Simple Sidebar Filters
     channels = st.sidebar.multiselect("Filter by Channel", options=df['Channel'].unique(), default=df['Channel'].unique())
