@@ -105,31 +105,33 @@ contacted_pct = (contacted / leads * 100) if leads else 0
 prospect_pct = (prospect / leads * 100) if leads else 0
 enrolled_pct = (enrolled / leads * 100) if leads else 0
 
-st.markdown(f"""
+st.markdown("""
 <style>
-.funnel {{
+.funnel {
     width: 70%;
     margin: auto;
     text-align: center;
     font-weight: bold;
     color: #333;
-}}
-.stage {{
+}
+.stage {
     margin: 12px auto;
     padding: 18px;
     border-radius: 12px;
     font-size: 18px;
-}}
-.stage1 {{ width: 100%; background: #f9d976; }}
-.stage2 {{ width: 80%; background: #f39c12; }}
-.stage3 {{ width: 60%; background: #e67e22; color: white; }}
-.stage4 {{ width: 40%; background: #d35400; color: white; }}
-.small {{
+}
+.stage1 { width: 100%; background: #f9d976; }
+.stage2 { width: 80%; background: #f39c12; }
+.stage3 { width: 60%; background: #e67e22; color: white; }
+.stage4 { width: 40%; background: #d35400; color: white; }
+.small {
     font-size: 14px;
     opacity: 0.8;
-}}
+}
 </style>
+""", unsafe_allow_html=True)
 
+st.markdown(f"""
 <div class="funnel">
     <div class="stage stage1">
         Leads: {leads}
