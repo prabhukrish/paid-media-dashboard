@@ -1,16 +1,16 @@
-Channel,Campaign,Spend,Impressions,Clicks,Conversions
-Google Ads,IELTS Search [ Online ] - PAN India | Mar 25,112666.9,30415,2471,197
-Google Ads,IELTS Crash course online -Nov 25,40981.74,8402,844,146
-Google Ads,French Course Leads -Canada | 03-03-26,21553.12,2165,198,12
-Google Ads,IELTS [Vadodara ] - Search Leads | Sep 2025,47077.73,2250,339,53.9
-Google Ads,IELTS [Tamil Nadu]- Search Leads  | Jan 24,42552.51,7461,576,59.5
-Meta Ads,B2B Leads New Academy | Dec25,45174.23,165193,1324,184
-Meta Ads,IELTS Leads South India | Dec 2025,30204.66,353160,968,174
-Meta Ads,PTE & IELTS Leads Campaign  | Dec2025,15052.17,163641,1763,112
-Meta Ads,Study in UK Leads Campaign  | Dec 25,1925.33,17297,1818,12
-Meta Ads,Test - B2B Leads New Academy | Dec25,26331.82,166500,6100,95
-Meta Ads,Study MBBS Leads Campiagn | Feb 2026,7174.35,105942,299,49
-Meta Ads,Engagement |  Kanan Students Visa Fair | 23rd Feb,1413.92,43647,344,0
-Meta Ads,My career mentor Leads Webinar | Feb 26,2310.79,30307,445,57
-Meta Ads,New Hiring | Vadodara | Creative Team | Leads | 16-03-26,834.82,13798,611,88
-Meta Ads,Georgian Collage | Leads | Video | 19-03-2026,3105.77,54254,,30
+date,platform,campaign,spend,impressions,clicks,leads,qualified_leads,sales,revenue
+2026-04-01,Google Ads,IELTS Search [ Online ] - PAN India | Mar 25,112666.9,30415,2471,197,80,25,250000
+2026-04-01,Google Ads,IELTS Crash course online - Nov 25,40981.74,8402,844,146,60,18,180000
+2026-04-01,Google Ads,French Course Leads - Canada | 03-03-26,21553.12,2165,198,12,5,2,20000
+2026-04-01,Google Ads,IELTS [Vadodara ] - Search Leads | Sep 2025,47077.73,2250,339,54,22,8,80000
+2026-04-01,Google Ads,IELTS [Tamil Nadu] - Search Leads | Jan 24,42552.51,7461,576,60,24,9,90000
+2026-04-01,Meta Ads,B2B Leads New Academy | Dec 25,45174.23,165193,1324,184,74,20,200000
+2026-04-01,Meta Ads,IELTS Leads South India | Dec 2025,30204.66,353160,968,174,70,18,180000
+2026-04-01,Meta Ads,PTE & IELTS Leads Campaign | Dec 2025,15052.17,163641,1763,112,45,12,120000
+2026-04-01,Meta Ads,Study in UK Leads Campaign | Dec 25,1925.33,17297,1818,12,5,1,10000
+2026-04-01,Meta Ads,Test - B2B Leads New Academy | Dec 25,26331.82,166500,6100,95,38,10,100000
+2026-04-01,Meta Ads,Study MBBS Leads Campaign | Feb 2026,7174.35,105942,299,49,20,6,60000
+2026-04-01,Meta Ads,Engagement | Kanan Students Visa Fair | 23rd Feb,1413.92,43647,344,0,0,0,0
+2026-04-01,Meta Ads,My Career Mentor Leads Webinar | Feb 26,2310.79,30307,445,57,23,6,60000
+2026-04-01,Meta Ads,New Hiring | Vadodara | Creative Team | Leads | 16-03-26,834.82,13798,611,88,35,8,80000
+2026-04-01,Meta Ads,Georgian College | Leads | Video | 19-03-2026,3105.77,54254,0,30,12,3,30000
