@@ -3,10 +3,8 @@ import pandas as pd
 import plotly.express as px
 import os
 
-# --- PAGE CONFIG ---
-st.set_page_config(page_title="Paid Media Dashboard", layout="wide")
-
-st.title("🎯 Performance Marketing Dashboard")
+st.set_page_config(page_title="Revenue Dashboard", layout="wide")
+st.title("🎯 Marketing + Sales Dashboard")
 
 # --- LOAD DATA ---
 data_file = "master_data.csv"
@@ -17,30 +15,16 @@ else:
     st.error("master_data.csv not found")
     st.stop()
 
-# --- CLEAN COLUMN NAMES ---
-df.columns = df.columns.str.strip()
+# --- CLEAN ---
+df.columns = df.columns.str.strip().str.lower()
 
-# --- STANDARDIZE (IMPORTANT FIX) ---
-df = df.rename(columns={
-    'Channel': 'platform',
-    'Campaign': 'campaign',
-    'Conversions': 'leads',
-    'Spend': 'spend',
-    'Impressions': 'impressions',
-    'Clicks': 'clicks'
-})
-
-# --- FIX TYPES ---
-numeric_cols = ['spend','impressions','clicks','leads']
+numeric_cols = ['spend','leads','not_connected','prospect','not_relevant','enrolled','revenue']
 for col in numeric_cols:
     df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
-# --- ADD MISSING BUSINESS COLUMNS ---
-df['qualified_leads'] = (df['leads'] * 0.4).round()
-df['sales'] = (df['leads'] * 0.15).round()
-df['revenue'] = df['sales'] * 10000
+df['date'] = pd.to_datetime(df['date'])
 
-# --- SIDEBAR ---
+# --- FILTERS ---
 st.sidebar.header("Filters")
 
 platforms = df['platform'].unique().tolist()
@@ -56,17 +40,17 @@ filtered_df = filtered_df[filtered_df['campaign'].isin(selected_campaigns)]
 # --- KPI ---
 total_spend = filtered_df['spend'].sum()
 total_leads = filtered_df['leads'].sum()
-total_sales = filtered_df['sales'].sum()
+total_enrolled = filtered_df['enrolled'].sum()
 total_revenue = filtered_df['revenue'].sum()
 
 cpl = total_spend / total_leads if total_leads else 0
-cpa = total_spend / total_sales if total_sales else 0
+cpa = total_spend / total_enrolled if total_enrolled else 0
 roas = total_revenue / total_spend if total_spend else 0
 
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("Spend", f"₹{total_spend:,.0f}")
 c2.metric("Leads", int(total_leads))
-c3.metric("Sales", int(total_sales))
+c3.metric("Enrolled", int(total_enrolled))
 c4.metric("Revenue", f"₹{total_revenue:,.0f}")
 
 c5, c6, c7 = st.columns(3)
@@ -76,65 +60,65 @@ c7.metric("ROAS", f"{roas:.2f}")
 
 st.markdown("---")
 
-# --- TABLE ---
+# --- CAMPAIGN TABLE ---
 st.subheader("📊 Campaign Performance")
 
-table = filtered_df.groupby(['platform','campaign']).agg({
-    'spend':'sum',
-    'leads':'sum',
-    'sales':'sum',
-    'revenue':'sum'
-}).reset_index()
+campaign_df = filtered_df.groupby(['platform','campaign']).sum().reset_index()
 
-table['CPL'] = table['spend'] / table['leads']
-table['ROAS'] = table['revenue'] / table['spend']
+# % CALCULATIONS
+campaign_df['Not Connected %'] = (campaign_df['not_connected'] / campaign_df['leads'] * 100).round(1)
+campaign_df['Prospect %'] = (campaign_df['prospect'] / campaign_df['leads'] * 100).round(1)
+campaign_df['Not Relevant %'] = (campaign_df['not_relevant'] / campaign_df['leads'] * 100).round(1)
+campaign_df['Enrolled %'] = (campaign_df['enrolled'] / campaign_df['leads'] * 100).round(1)
 
-st.dataframe(table.sort_values(by="spend", ascending=False), use_container_width=True)
+campaign_df['Contact Rate %'] = ((campaign_df['leads'] - campaign_df['not_connected']) / campaign_df['leads'] * 100).round(1)
+campaign_df['Conversion %'] = (campaign_df['enrolled'] / campaign_df['leads'] * 100).round(1)
+
+campaign_df['CPL'] = campaign_df['spend'] / campaign_df['leads']
+campaign_df['ROAS'] = campaign_df['revenue'] / campaign_df['spend']
+
+st.dataframe(campaign_df.sort_values(by="spend", ascending=False), use_container_width=True)
 
 st.markdown("---")
 
 # --- FUNNEL ---
-st.subheader("🔁 Funnel")
+st.subheader("🔁 Lead Status Funnel")
 
-funnel_df = pd.DataFrame({
-    'Stage': ['Leads','Qualified','Sales'],
+funnel = pd.DataFrame({
+    'Stage': ['Leads','Not Connected','Prospect','Not Relevant','Enrolled'],
     'Count': [
         total_leads,
-        filtered_df['qualified_leads'].sum(),
-        total_sales
+        filtered_df['not_connected'].sum(),
+        filtered_df['prospect'].sum(),
+        filtered_df['not_relevant'].sum(),
+        total_enrolled
     ]
 })
 
-st.bar_chart(funnel_df.set_index('Stage'))
+st.bar_chart(funnel.set_index('Stage'))
 
 st.markdown("---")
 
-# --- VISUALS ---
-col1, col2 = st.columns(2)
+# --- WEEKLY TREND ---
+st.subheader("📅 Weekly Trend")
 
-with col1:
-    st.subheader("Spend by Platform")
-    fig1 = px.pie(table, values='spend', names='platform')
-    st.plotly_chart(fig1, use_container_width=True)
+weekly = filtered_df.groupby(pd.Grouper(key='date', freq='W')).sum().reset_index()
 
-with col2:
-    st.subheader("Revenue vs Spend")
-    fig2 = px.scatter(table, x="spend", y="revenue", size="leads", color="platform")
-    st.plotly_chart(fig2, use_container_width=True)
+st.line_chart(weekly.set_index('date')[['leads','enrolled']])
+st.line_chart(weekly.set_index('date')[['spend']])
 
-    st.markdown("---")
-st.subheader("📅 Weekly Performance Trend")
+st.markdown("---")
 
-# Ensure date exists
-if 'date' in df.columns:
-    df['date'] = pd.to_datetime(df['date'], errors='coerce')
+# --- INSIGHTS ---
+st.subheader("🧠 Key Insights")
 
-    weekly_df = df.groupby(pd.Grouper(key='date', freq='W')).agg({
-        'spend': 'sum',
-        'leads': 'sum',
-        'sales': 'sum',
-        'revenue': 'sum'
-    }).reset_index()
+best = campaign_df.sort_values(by="ROAS", ascending=False).iloc[0]
+worst = campaign_df.sort_values(by="ROAS", ascending=True).iloc[0]
 
-    st.line_chart(weekly_df.set_index('date')[['leads','sales']])
-    st.line_chart(weekly_df.set_index('date')[['spend']])
+st.write(f"🔥 Best Campaign: {best['campaign']} (ROAS: {best['ROAS']:.2f})")
+st.write(f"⚠️ Worst Campaign: {worst['campaign']} (ROAS: {worst['ROAS']:.2f})")
+
+low_conv = campaign_df[campaign_df['Conversion %'] < 10]
+
+for _, row in low_conv.iterrows():
+    st.write(f"🚨 Low Conversion: {row['campaign']} ({row['Conversion %']}%)")
