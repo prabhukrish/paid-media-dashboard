@@ -108,12 +108,11 @@ st.markdown("---")
 st.subheader("🔻 Lead Funnel")
 
 funnel_df = pd.DataFrame({
-    'Stage': ['Leads','Not Connected','Prospect','Not Relevant','Enrolled'],
+    'Stage': ['Leads','Contacted','Prospect','Enrolled'],
     'Count': [
         total_leads,
-        filtered_df['not_connected'].sum(),
+        total_leads - filtered_df['not_connected'].sum(),
         filtered_df['prospect'].sum(),
-        filtered_df['not_relevant'].sum(),
         total_enrolled
     ]
 })
