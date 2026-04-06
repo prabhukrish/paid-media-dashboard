@@ -63,7 +63,15 @@ st.markdown("---")
 # --- CAMPAIGN TABLE ---
 st.subheader("📊 Campaign Performance")
 
-campaign_df = filtered_df.groupby(['platform','campaign']).sum().reset_index()
+campaign_df = filtered_df.groupby(['platform','campaign']).agg({
+    'spend':'sum',
+    'leads':'sum',
+    'not_connected':'sum',
+    'prospect':'sum',
+    'not_relevant':'sum',
+    'enrolled':'sum',
+    'revenue':'sum'
+}).reset_index()
 
 # % CALCULATIONS
 campaign_df['Not Connected %'] = (campaign_df['not_connected'] / campaign_df['leads'] * 100).round(1)
