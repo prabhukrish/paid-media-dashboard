@@ -100,6 +100,11 @@ contacted = int(total_leads - filtered_df['not_connected'].sum())
 prospect = int(filtered_df['prospect'].sum())
 enrolled = int(total_enrolled)
 
+# % calculations
+contacted_pct = (contacted / leads * 100) if leads else 0
+prospect_pct = (prospect / leads * 100) if leads else 0
+enrolled_pct = (enrolled / leads * 100) if leads else 0
+
 st.markdown(f"""
 <style>
 .funnel {{
@@ -119,17 +124,34 @@ st.markdown(f"""
 .stage2 {{ width: 80%; background: #f39c12; }}
 .stage3 {{ width: 60%; background: #e67e22; color: white; }}
 .stage4 {{ width: 40%; background: #d35400; color: white; }}
+.small {{
+    font-size: 14px;
+    opacity: 0.8;
+}}
 </style>
 
 <div class="funnel">
-    <div class="stage stage1">Leads: {leads}</div>
-    <div class="stage stage2">Contacted: {contacted}</div>
-    <div class="stage stage3">Prospect: {prospect}</div>
-    <div class="stage stage4">Enrolled: {enrolled}</div>
+    <div class="stage stage1">
+        Leads: {leads}
+        <div class="small">100%</div>
+    </div>
+
+    <div class="stage stage2">
+        Contacted: {contacted}
+        <div class="small">{contacted_pct:.1f}% of Leads</div>
+    </div>
+
+    <div class="stage stage3">
+        Prospect: {prospect}
+        <div class="small">{prospect_pct:.1f}% of Leads</div>
+    </div>
+
+    <div class="stage stage4">
+        Enrolled: {enrolled}
+        <div class="small">{enrolled_pct:.1f}% Conversion</div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
-
-st.markdown("---")
 
 # --- WEEKLY TREND ---
 st.subheader("📅 Weekly Trend")
