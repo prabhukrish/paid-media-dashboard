@@ -103,9 +103,30 @@ funnel = pd.DataFrame({
     ]
 })
 
-st.bar_chart(funnel.set_index('Stage'))
 
 st.markdown("---")
+st.subheader("🔻 Lead Funnel")
+
+funnel_df = pd.DataFrame({
+    'Stage': ['Leads','Not Connected','Prospect','Not Relevant','Enrolled'],
+    'Count': [
+        total_leads,
+        filtered_df['not_connected'].sum(),
+        filtered_df['prospect'].sum(),
+        filtered_df['not_relevant'].sum(),
+        total_enrolled
+    ]
+})
+
+import plotly.graph_objects as go
+
+fig = go.Figure(go.Funnel(
+    y = funnel_df['Stage'],
+    x = funnel_df['Count'],
+    textinfo = "value+percent initial"
+))
+
+st.plotly_chart(fig, use_container_width=True)
 
 # --- WEEKLY TREND ---
 st.subheader("📅 Weekly Trend")
