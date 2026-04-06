@@ -3,113 +3,142 @@ import pandas as pd
 import plotly.express as px
 import os
 
-# --- 1. PAGE CONFIG ---
-st.set_page_config(page_title="Paid Media Dashboard", layout="wide")
-
-# --- 2. DATA STANDARDIZATION FUNCTION ---
-def standardize_data(df):
-    df.columns = df.columns.str.strip()
-    rename_map = {
-        'Cost': 'Spend', 
-        'Amount Spent (INR)': 'Spend',
-        'Amount Spent': 'Spend',
-        'Ad Campaign Name': 'Campaign',
-        'Campaign Name': 'Campaign',
-        'Results': 'Conversions',
-        'Link Clicks': 'Clicks'
-    }
-    df = df.rename(columns=rename_map)
-    numeric_cols = ['Spend', 'Impressions', 'Clicks', 'Conversions']
-    for col in numeric_cols:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
-    if 'Channel' in df.columns:
-        df['Channel'] = df['Channel'].astype(str)
-    if 'Campaign' in df.columns:
-        df['Campaign'] = df['Campaign'].astype(str)
-    return df
-
-# --- 3. CUSTOM STYLING ---
-st.markdown("""
-    <style>
-    .main { background-color: #f8f9fa; }
-    div[data-testid="stMetricValue"] { font-size: 32px; color: #007bff; font-weight: bold; }
-    </style>
-    """, unsafe_allow_html=True)
+# --- PAGE CONFIG ---
+st.set_page_config(page_title="Paid Campaign Dashboard", layout="wide")
 
 st.title("🎯 Performance Marketing Dashboard")
 
-# --- 4. DATA LOADING LOGIC ---
+# --- LOAD DATA ---
 data_file = "master_data.csv"
 
 if os.path.exists(data_file):
-    df_raw = pd.read_csv(data_file)
-    df = standardize_data(df_raw)
+    df = pd.read_csv(data_file)
 else:
-    uploaded_file = st.sidebar.file_uploader("Upload CSV (Fallback)", type="csv")
-    if uploaded_file is not None:
-        df_raw = pd.read_csv(uploaded_file)
-        df = standardize_data(df_raw)
-    else:
-        st.info("👋 Please upload 'master_data.csv' to your GitHub repo.")
-        st.stop()
+    st.error("master_data.csv not found")
+    st.stop()
 
-# --- 5. SIDEBAR FILTERS ---
-st.sidebar.header("Filter Options")
-search_query = st.sidebar.text_input("Search Campaign Name", "")
+# --- CLEAN COLUMN NAMES ---
+df.columns = df.columns.str.strip().str.lower()
 
-unique_channels = df['Channel'].unique().tolist() if 'Channel' in df.columns else []
-selected_channels = st.sidebar.multiselect("Select Channels", options=unique_channels, default=unique_channels)
+# --- ENSURE REQUIRED COLUMNS ---
+required_cols = [
+    'date','platform','campaign','spend','impressions','clicks',
+    'leads','qualified_leads','sales','revenue'
+]
 
-available_campaigns = df[df['Channel'].isin(selected_channels)]['Campaign'].unique().tolist()
-selected_campaigns = st.sidebar.multiselect("Select/Deselect Campaigns", options=available_campaigns, default=available_campaigns)
+for col in required_cols:
+    if col not in df.columns:
+        df[col] = 0
 
-# Apply Filters
-mask = (df['Campaign'].str.contains(search_query, case=False)) & \
-       (df['Channel'].isin(selected_channels)) & \
-       (df['Campaign'].isin(selected_campaigns))
-filtered_df = df[mask]
+# --- TYPE FIX ---
+df['date'] = pd.to_datetime(df['date'], errors='coerce')
 
-# --- 6. TOP ROW: KPI METRICS (₹ INR) ---
-total_spend = filtered_df['Spend'].sum()
-total_clicks = int(filtered_df['Clicks'].sum())
-total_conv = filtered_df['Conversions'].sum()
-avg_cpa = total_spend / total_conv if total_conv > 0 else 0
+numeric_cols = ['spend','impressions','clicks','leads','qualified_leads','sales','revenue']
+for col in numeric_cols:
+    df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
-m1, m2, m3, m4 = st.columns(4)
-m1.metric("Total Spend", f"₹{total_spend:,.0f}")
-m2.metric("Total Clicks", f"{total_clicks:,}")
-m3.metric("Conversions", f"{total_conv:,.0f}")
-m4.metric("Avg. CPA", f"₹{avg_cpa:,.2f}")
+# --- SIDEBAR FILTERS ---
+st.sidebar.header("Filters")
+
+platforms = df['platform'].unique().tolist()
+selected_platforms = st.sidebar.multiselect("Select Platform", platforms, default=platforms)
+
+filtered_df = df[df['platform'].isin(selected_platforms)]
+
+campaigns = filtered_df['campaign'].unique().tolist()
+selected_campaigns = st.sidebar.multiselect("Select Campaign", campaigns, default=campaigns)
+
+filtered_df = filtered_df[filtered_df['campaign'].isin(selected_campaigns)]
+
+# --- KPI METRICS ---
+total_spend = filtered_df['spend'].sum()
+total_leads = filtered_df['leads'].sum()
+total_sales = filtered_df['sales'].sum()
+total_revenue = filtered_df['revenue'].sum()
+
+cpl = total_spend / total_leads if total_leads > 0 else 0
+cpa = total_spend / total_sales if total_sales > 0 else 0
+roas = total_revenue / total_spend if total_spend > 0 else 0
+
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("💸 Spend", f"₹{total_spend:,.0f}")
+col2.metric("📥 Leads", f"{int(total_leads)}")
+col3.metric("💰 Sales", f"{int(total_sales)}")
+col4.metric("📈 Revenue", f"₹{total_revenue:,.0f}")
+
+col5, col6, col7 = st.columns(3)
+col5.metric("CPL", f"₹{cpl:,.0f}")
+col6.metric("CPA", f"₹{cpa:,.0f}")
+col7.metric("ROAS", f"{roas:.2f}")
 
 st.markdown("---")
 
-# --- 7. DETAILED CAMPAIGN TABLE ---
-st.subheader("📊 Detailed Campaign Performance")
-group_cols = ['Channel', 'Campaign'] if 'Channel' in df.columns else ['Campaign']
-detail_table = filtered_df.groupby(group_cols).agg({
-    'Spend': 'sum', 'Impressions': 'sum', 'Clicks': 'sum', 'Conversions': 'sum'
+# --- CHANNEL PERFORMANCE ---
+st.subheader("📊 Channel Performance")
+
+channel_df = filtered_df.groupby('platform').agg({
+    'spend':'sum',
+    'leads':'sum',
+    'sales':'sum',
+    'revenue':'sum'
 }).reset_index()
 
-detail_table['CTR %'] = (detail_table['Clicks'] / detail_table['Impressions'] * 100).fillna(0).round(2)
-detail_table['Conv. Rate %'] = (detail_table['Conversions'] / detail_table['Clicks'] * 100).fillna(0).round(2)
-detail_table['CPA'] = (detail_table['Spend'] / detail_table['Conversions']).fillna(0).round(2)
+channel_df['CPL'] = channel_df['spend'] / channel_df['leads']
+channel_df['CPA'] = channel_df['spend'] / channel_df['sales']
+channel_df['ROAS'] = channel_df['revenue'] / channel_df['spend']
 
-display_df = detail_table.copy()
-display_df['Spend'] = display_df['Spend'].apply(lambda x: f"₹{x:,.0f}")
-display_df['CPA'] = display_df['CPA'].apply(lambda x: f"₹{x:,.2f}")
+st.dataframe(channel_df, use_container_width=True)
 
-order = group_cols + ['Spend', 'Impressions', 'Clicks', 'CTR %', 'Conversions', 'Conv. Rate %', 'CPA']
-st.dataframe(display_df[order], use_container_width=True, hide_index=True)
-
-# --- 8. VISUALS ---
 st.markdown("---")
-c1, c2 = st.columns(2)
-with c1:
-    st.subheader("Spend by Channel")
-    fig1 = px.pie(detail_table, values='Spend', names='Channel', hole=0.5)
+
+# --- CAMPAIGN PERFORMANCE ---
+st.subheader("🎯 Campaign Performance")
+
+campaign_df = filtered_df.groupby(['campaign','platform']).agg({
+    'spend':'sum',
+    'leads':'sum',
+    'qualified_leads':'sum',
+    'sales':'sum',
+    'revenue':'sum'
+}).reset_index()
+
+campaign_df['CPL'] = campaign_df['spend'] / campaign_df['leads']
+campaign_df['ROAS'] = campaign_df['revenue'] / campaign_df['spend']
+
+st.dataframe(campaign_df.sort_values(by="spend", ascending=False), use_container_width=True)
+
+st.markdown("---")
+
+# --- FUNNEL ---
+st.subheader("🔁 Lead Funnel")
+
+total_qualified = filtered_df['qualified_leads'].sum()
+
+funnel_df = pd.DataFrame({
+    'Stage': ['Leads', 'Qualified', 'Sales'],
+    'Count': [total_leads, total_qualified, total_sales]
+})
+
+st.bar_chart(funnel_df.set_index('Stage'))
+
+st.markdown("---")
+
+# --- VISUALS ---
+colA, colB = st.columns(2)
+
+with colA:
+    st.subheader("Spend by Platform")
+    fig1 = px.pie(channel_df, values='spend', names='platform', hole=0.5)
     st.plotly_chart(fig1, use_container_width=True)
-with c2:
-    st.subheader("Conversions vs. Spend")
-    fig2 = px.scatter(detail_table, x="Spend", y="Conversions", size="Clicks", color="Channel", hover_name="Campaign")
+
+with colB:
+    st.subheader("Revenue vs Spend")
+    fig2 = px.scatter(
+        campaign_df,
+        x="spend",
+        y="revenue",
+        size="leads",
+        color="platform",
+        hover_name="campaign"
+    )
     st.plotly_chart(fig2, use_container_width=True)
