@@ -119,11 +119,36 @@ funnel_df = pd.DataFrame({
 
 import plotly.graph_objects as go
 
+st.markdown("---")
+st.subheader("🔻 Lead Funnel (Visual)")
+
+# Funnel Data (clean version)
+leads = total_leads
+contacted = total_leads - filtered_df['not_connected'].sum()
+prospect = filtered_df['prospect'].sum()
+enrolled = total_enrolled
+
+stages = ["Leads", "Contacted", "Prospect", "Enrolled"]
+values = [leads, contacted, prospect, enrolled]
+
+# Color gradient (top → bottom)
+colors = ["#f9d976", "#f39c12", "#e67e22", "#d35400"]
+
 fig = go.Figure(go.Funnel(
-    y = funnel_df['Stage'],
-    x = funnel_df['Count'],
-    textinfo = "value+percent initial"
+    y = stages,
+    x = values,
+    textinfo = "value+percent initial",
+    marker = {"color": colors},
+    opacity = 0.95
 ))
+
+fig.update_layout(
+    height=500,
+    margin=dict(l=50, r=50, t=30, b=30),
+    funnelmode="stack",
+)
+
+st.plotly_chart(fig, use_container_width=True)
 
 st.plotly_chart(fig, use_container_width=True)
 
