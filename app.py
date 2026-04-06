@@ -130,3 +130,21 @@ low_conv = campaign_df[campaign_df['Conversion %'] < 10]
 
 for _, row in low_conv.iterrows():
     st.write(f"🚨 Low Conversion: {row['campaign']} ({row['Conversion %']}%)")
+
+
+st.markdown("---")
+st.subheader("🚨 Problem Diagnosis")
+
+for _, row in campaign_df.iterrows():
+    
+    if row['Not Connected %'] > 40:
+        st.write(f"📞 {row['campaign']} → High Not Connected ({row['Not Connected %']}%) → Sales follow-up issue")
+
+    elif row['Not Relevant %'] > 30:
+        st.write(f"🎯 {row['campaign']} → High Not Relevant ({row['Not Relevant %']}%) → Targeting issue")
+
+    elif row['Prospect %'] > 40 and row['Conversion %'] < 10:
+        st.write(f"🤝 {row['campaign']} → Good interest but low conversion → Closing issue")
+
+    elif row['Conversion %'] > 15:
+        st.write(f"🔥 {row['campaign']} → Strong conversion → Scale this campaign")    
