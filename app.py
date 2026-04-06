@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 import os
 
 # --- PAGE CONFIG ---
@@ -76,7 +75,6 @@ campaign_df = filtered_df.groupby(['platform','campaign']).agg({
     'revenue':'sum'
 }).reset_index()
 
-# % metrics
 campaign_df['Not Connected %'] = (campaign_df['not_connected'] / campaign_df['leads'] * 100).round(1)
 campaign_df['Prospect %'] = (campaign_df['prospect'] / campaign_df['leads'] * 100).round(1)
 campaign_df['Not Relevant %'] = (campaign_df['not_relevant'] / campaign_df['leads'] * 100).round(1)
@@ -92,7 +90,7 @@ st.dataframe(campaign_df.sort_values(by="spend", ascending=False), use_container
 
 st.markdown("---")
 
-# --- PREMIUM FUNNEL (HTML STYLE) ---
+# --- FUNNEL (FIXED VERSION) ---
 st.subheader("🔻 Lead Funnel")
 
 leads = int(total_leads)
@@ -105,6 +103,7 @@ contacted_pct = (contacted / leads * 100) if leads else 0
 prospect_pct = (prospect / leads * 100) if leads else 0
 enrolled_pct = (enrolled / leads * 100) if leads else 0
 
+# CSS
 st.markdown("""
 <style>
 .funnel {
@@ -112,7 +111,6 @@ st.markdown("""
     margin: auto;
     text-align: center;
     font-weight: bold;
-    color: #333;
 }
 .stage {
     margin: 12px auto;
@@ -131,6 +129,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# HTML
 st.markdown(f"""
 <div class="funnel">
     <div class="stage stage1">
@@ -155,6 +154,8 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
+st.markdown("---")
+
 # --- WEEKLY TREND ---
 st.subheader("📅 Weekly Trend")
 
@@ -178,14 +179,15 @@ worst = campaign_df.sort_values(by="ROAS", ascending=True).iloc[0]
 st.write(f"🔥 Best Campaign: {best['campaign']} (ROAS: {best['ROAS']:.2f})")
 st.write(f"⚠️ Worst Campaign: {worst['campaign']} (ROAS: {worst['ROAS']:.2f})")
 
-# --- PROBLEM DIAGNOSIS ---
 st.markdown("---")
+
+# --- PROBLEM DIAGNOSIS ---
 st.subheader("🚨 Problem Diagnosis")
 
 for _, row in campaign_df.iterrows():
 
     if row['Not Connected %'] > 40:
-        st.write(f"📞 {row['campaign']} → High Not Connected ({row['Not Connected %']}%) → Sales follow-up issue")
+        st.write(f"📞 {row['campaign']} → High Not Connected ({row['Not Connected %']}%) → Sales issue")
 
     elif row['Not Relevant %'] > 30:
         st.write(f"🎯 {row['campaign']} → High Not Relevant ({row['Not Relevant %']}%) → Targeting issue")
@@ -194,4 +196,4 @@ for _, row in campaign_df.iterrows():
         st.write(f"🤝 {row['campaign']} → Good interest but low conversion → Closing issue")
 
     elif row['Conversion %'] > 15:
-        st.write(f"🔥 {row['campaign']} → Strong conversion → Scale this campaign")
+        st.write(f"🔥 {row['campaign']} → Strong conversion → Scale this")
