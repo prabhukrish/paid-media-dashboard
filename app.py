@@ -121,3 +121,20 @@ with col2:
     st.subheader("Revenue vs Spend")
     fig2 = px.scatter(table, x="spend", y="revenue", size="leads", color="platform")
     st.plotly_chart(fig2, use_container_width=True)
+
+    st.markdown("---")
+st.subheader("📅 Weekly Performance Trend")
+
+# Ensure date exists
+if 'date' in df.columns:
+    df['date'] = pd.to_datetime(df['date'], errors='coerce')
+
+    weekly_df = df.groupby(pd.Grouper(key='date', freq='W')).agg({
+        'spend': 'sum',
+        'leads': 'sum',
+        'sales': 'sum',
+        'revenue': 'sum'
+    }).reset_index()
+
+    st.line_chart(weekly_df.set_index('date')[['leads','sales']])
+    st.line_chart(weekly_df.set_index('date')[['spend']])
