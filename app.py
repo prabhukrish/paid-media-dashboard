@@ -1,10 +1,13 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import os
 
-st.set_page_config(page_title="Revenue Dashboard", layout="wide")
-st.title("🎯 Marketing + Sales Dashboard")
+# --- PAGE CONFIG ---
+st.set_page_config(page_title="Marketing + Sales Dashboard", layout="wide")
+
+st.title("🎯 Performance Marketing + Sales Dashboard")
 
 # --- LOAD DATA ---
 data_file = "master_data.csv"
@@ -24,7 +27,7 @@ for col in numeric_cols:
 
 df['date'] = pd.to_datetime(df['date'])
 
-# --- FILTERS ---
+# --- SIDEBAR ---
 st.sidebar.header("Filters")
 
 platforms = df['platform'].unique().tolist()
@@ -48,10 +51,10 @@ cpa = total_spend / total_enrolled if total_enrolled else 0
 roas = total_revenue / total_spend if total_spend else 0
 
 c1, c2, c3, c4 = st.columns(4)
-c1.metric("Spend", f"₹{total_spend:,.0f}")
-c2.metric("Leads", int(total_leads))
-c3.metric("Enrolled", int(total_enrolled))
-c4.metric("Revenue", f"₹{total_revenue:,.0f}")
+c1.metric("💸 Spend", f"₹{total_spend:,.0f}")
+c2.metric("📥 Leads", int(total_leads))
+c3.metric("🎯 Enrolled", int(total_enrolled))
+c4.metric("💰 Revenue", f"₹{total_revenue:,.0f}")
 
 c5, c6, c7 = st.columns(3)
 c5.metric("CPL", f"₹{cpl:,.0f}")
@@ -73,7 +76,7 @@ campaign_df = filtered_df.groupby(['platform','campaign']).agg({
     'revenue':'sum'
 }).reset_index()
 
-# % CALCULATIONS
+# % metrics
 campaign_df['Not Connected %'] = (campaign_df['not_connected'] / campaign_df['leads'] * 100).round(1)
 campaign_df['Prospect %'] = (campaign_df['prospect'] / campaign_df['leads'] * 100).round(1)
 campaign_df['Not Relevant %'] = (campaign_df['not_relevant'] / campaign_df['leads'] * 100).round(1)
@@ -89,73 +92,53 @@ st.dataframe(campaign_df.sort_values(by="spend", ascending=False), use_container
 
 st.markdown("---")
 
-# --- FUNNEL ---
-st.subheader("🔁 Lead Status Funnel")
-
-funnel = pd.DataFrame({
-    'Stage': ['Leads','Not Connected','Prospect','Not Relevant','Enrolled'],
-    'Count': [
-        total_leads,
-        filtered_df['not_connected'].sum(),
-        filtered_df['prospect'].sum(),
-        filtered_df['not_relevant'].sum(),
-        total_enrolled
-    ]
-})
-
-
-st.markdown("---")
+# --- PREMIUM FUNNEL (HTML STYLE) ---
 st.subheader("🔻 Lead Funnel")
 
-funnel_df = pd.DataFrame({
-    'Stage': ['Leads','Contacted','Prospect','Enrolled'],
-    'Count': [
-        total_leads,
-        total_leads - filtered_df['not_connected'].sum(),
-        filtered_df['prospect'].sum(),
-        total_enrolled
-    ]
-})
+leads = int(total_leads)
+contacted = int(total_leads - filtered_df['not_connected'].sum())
+prospect = int(filtered_df['prospect'].sum())
+enrolled = int(total_enrolled)
 
-import plotly.graph_objects as go
+st.markdown(f"""
+<style>
+.funnel {{
+    width: 70%;
+    margin: auto;
+    text-align: center;
+    font-weight: bold;
+    color: #333;
+}}
+.stage {{
+    margin: 12px auto;
+    padding: 18px;
+    border-radius: 12px;
+    font-size: 18px;
+}}
+.stage1 {{ width: 100%; background: #f9d976; }}
+.stage2 {{ width: 80%; background: #f39c12; }}
+.stage3 {{ width: 60%; background: #e67e22; color: white; }}
+.stage4 {{ width: 40%; background: #d35400; color: white; }}
+</style>
+
+<div class="funnel">
+    <div class="stage stage1">Leads: {leads}</div>
+    <div class="stage stage2">Contacted: {contacted}</div>
+    <div class="stage stage3">Prospect: {prospect}</div>
+    <div class="stage stage4">Enrolled: {enrolled}</div>
+</div>
+""", unsafe_allow_html=True)
 
 st.markdown("---")
-st.subheader("🔻 Lead Funnel (Visual)")
-
-# Funnel Data (clean version)
-leads = total_leads
-contacted = total_leads - filtered_df['not_connected'].sum()
-prospect = filtered_df['prospect'].sum()
-enrolled = total_enrolled
-
-stages = ["Leads", "Contacted", "Prospect", "Enrolled"]
-values = [leads, contacted, prospect, enrolled]
-
-# Color gradient (top → bottom)
-colors = ["#f9d976", "#f39c12", "#e67e22", "#d35400"]
-
-fig = go.Figure(go.Funnel(
-    y = stages,
-    x = values,
-    textinfo = "value+percent initial",
-    marker = {"color": colors},
-    opacity = 0.95
-))
-
-fig.update_layout(
-    height=500,
-    margin=dict(l=50, r=50, t=30, b=30),
-    funnelmode="stack",
-)
-
-st.plotly_chart(fig, use_container_width=True)
-
-st.plotly_chart(fig, use_container_width=True)
 
 # --- WEEKLY TREND ---
 st.subheader("📅 Weekly Trend")
 
-weekly = filtered_df.groupby(pd.Grouper(key='date', freq='W')).sum().reset_index()
+weekly = filtered_df.groupby(pd.Grouper(key='date', freq='W')).agg({
+    'spend':'sum',
+    'leads':'sum',
+    'enrolled':'sum'
+}).reset_index()
 
 st.line_chart(weekly.set_index('date')[['leads','enrolled']])
 st.line_chart(weekly.set_index('date')[['spend']])
@@ -171,17 +154,12 @@ worst = campaign_df.sort_values(by="ROAS", ascending=True).iloc[0]
 st.write(f"🔥 Best Campaign: {best['campaign']} (ROAS: {best['ROAS']:.2f})")
 st.write(f"⚠️ Worst Campaign: {worst['campaign']} (ROAS: {worst['ROAS']:.2f})")
 
-low_conv = campaign_df[campaign_df['Conversion %'] < 10]
-
-for _, row in low_conv.iterrows():
-    st.write(f"🚨 Low Conversion: {row['campaign']} ({row['Conversion %']}%)")
-
-
+# --- PROBLEM DIAGNOSIS ---
 st.markdown("---")
 st.subheader("🚨 Problem Diagnosis")
 
 for _, row in campaign_df.iterrows():
-    
+
     if row['Not Connected %'] > 40:
         st.write(f"📞 {row['campaign']} → High Not Connected ({row['Not Connected %']}%) → Sales follow-up issue")
 
@@ -192,4 +170,4 @@ for _, row in campaign_df.iterrows():
         st.write(f"🤝 {row['campaign']} → Good interest but low conversion → Closing issue")
 
     elif row['Conversion %'] > 15:
-        st.write(f"🔥 {row['campaign']} → Strong conversion → Scale this campaign")    
+        st.write(f"🔥 {row['campaign']} → Strong conversion → Scale this campaign")
