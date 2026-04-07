@@ -116,12 +116,7 @@ c7.markdown(card("ROAS", f"{roas:.2f}"), unsafe_allow_html=True)
 st.markdown("---")
 
 # --- CAMPAIGN TABLE ---
-st.subheader("📊 Campaign Performance")
 
-st.dataframe(
-    campaign_df.sort_values(by="spend", ascending=False),
-    use_container_width=True
-)
 campaign_df = filtered_df.groupby(['platform','campaign']).agg({
     'spend':'sum',
     'leads':'sum',
@@ -132,6 +127,12 @@ campaign_df = filtered_df.groupby(['platform','campaign']).agg({
     'revenue':'sum'
 }).reset_index()
 
+st.subheader("📊 Campaign Performance")
+
+st.dataframe(
+    campaign_df.sort_values(by="spend", ascending=False),
+    use_container_width=True
+)
 campaign_df['Not Connected %'] = (campaign_df['not_connected'] / campaign_df['leads'] * 100).round(1)
 campaign_df['Prospect %'] = (campaign_df['prospect'] / campaign_df['leads'] * 100).round(1)
 campaign_df['Not Relevant %'] = (campaign_df['not_relevant'] / campaign_df['leads'] * 100).round(1)
