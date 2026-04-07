@@ -3,6 +3,21 @@ import pandas as pd
 import plotly.express as px
 import os
 
+def start_section(title):
+    st.markdown(f"""
+    <div style="
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        margin-top: 20px;
+    ">
+        <h3>{title}</h3>
+    """, unsafe_allow_html=True)
+
+def end_section():
+    st.markdown("</div>", unsafe_allow_html=True)
+
 st.markdown("""
 <style>
 .main {
@@ -103,6 +118,10 @@ st.markdown("---")
 # --- CAMPAIGN TABLE ---
 st.subheader("📊 Campaign Performance")
 
+st.dataframe(
+    campaign_df.sort_values(by="spend", ascending=False),
+    use_container_width=True
+)
 campaign_df = filtered_df.groupby(['platform','campaign']).agg({
     'spend':'sum',
     'leads':'sum',
