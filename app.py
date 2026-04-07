@@ -3,6 +3,13 @@ import pandas as pd
 import plotly.express as px
 import os
 
+st.markdown("""
+<style>
+.main {
+    background-color: #f6f8fb;
+}
+</style>
+""", unsafe_allow_html=True)
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Marketing + Sales Dashboard", layout="wide")
 
@@ -49,16 +56,47 @@ cpl = total_spend / total_leads if total_leads else 0
 cpa = total_spend / total_enrolled if total_enrolled else 0
 roas = total_revenue / total_spend if total_spend else 0
 
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("💸 Spend", f"₹{total_spend:,.0f}")
-c2.metric("📥 Leads", int(total_leads))
-c3.metric("🎯 Enrolled", int(total_enrolled))
-c4.metric("💰 Revenue", f"₹{total_revenue:,.0f}")
+st.markdown("""
+<style>
+.metric-card {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    text-align: center;
+}
+.metric-title {
+    font-size: 14px;
+    color: #888;
+}
+.metric-value {
+    font-size: 26px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+</style>
+""", unsafe_allow_html=True)
 
+def card(title, value):
+    return f"""
+    <div class="metric-card">
+        <div class="metric-title">{title}</div>
+        <div class="metric-value">{value}</div>
+    </div>
+    """
+
+# Top row
+c1, c2, c3, c4 = st.columns(4)
+c1.markdown(card("💸 Spend", f"₹{total_spend:,.0f}"), unsafe_allow_html=True)
+c2.markdown(card("📥 Leads", f"{int(total_leads)}"), unsafe_allow_html=True)
+c3.markdown(card("🎯 Enrolled", f"{int(total_enrolled)}"), unsafe_allow_html=True)
+c4.markdown(card("💰 Revenue", f"₹{total_revenue:,.0f}"), unsafe_allow_html=True)
+
+# Second row
 c5, c6, c7 = st.columns(3)
-c5.metric("CPL", f"₹{cpl:,.0f}")
-c6.metric("CPA", f"₹{cpa:,.0f}")
-c7.metric("ROAS", f"{roas:.2f}")
+c5.markdown(card("CPL", f"₹{cpl:,.0f}"), unsafe_allow_html=True)
+c6.markdown(card("CPA", f"₹{cpa:,.0f}"), unsafe_allow_html=True)
+c7.markdown(card("ROAS", f"{roas:.2f}"), unsafe_allow_html=True)
 
 st.markdown("---")
 
